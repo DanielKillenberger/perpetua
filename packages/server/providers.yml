@@ -1,0 +1,67 @@
+providers:
+  gcal:
+    display_name: "Google Calendar"
+    base_url: "https://www.googleapis.com/calendar/v3"
+    auth_url: "https://accounts.google.com/o/oauth2/v2/auth"
+    token_url: "https://oauth2.googleapis.com/token"
+    client_id: "${GOOGLE_CLIENT_ID}"
+    client_secret: "${GOOGLE_CLIENT_SECRET}"
+    scopes:
+      - "https://www.googleapis.com/auth/calendar.readonly"
+    extra_params:
+      access_type: "offline"
+      prompt: "consent"
+    token_expiry_buffer_seconds: 300
+
+  oura:
+    display_name: "Oura Ring"
+    base_url: "https://api.ouraring.com"
+    auth_url: "https://cloud.ouraring.com/oauth/authorize"
+    token_url: "https://api.ouraring.com/oauth/token"
+    client_id: "${OURA_CLIENT_ID}"
+    client_secret: "${OURA_CLIENT_SECRET}"
+    scopes:
+      - "personal"
+      - "daily"
+      - "heartrate"
+      - "workout"
+      - "tag"
+      - "session"
+
+  strava:
+    display_name: "Strava"
+    base_url: "https://www.strava.com/api/v3"
+    auth_url: "https://www.strava.com/oauth/authorize"
+    token_url: "https://www.strava.com/api/v3/oauth/token"
+    client_id: "${STRAVA_CLIENT_ID}"
+    client_secret: "${STRAVA_CLIENT_SECRET}"
+    scopes:
+      - "read"
+      - "activity:read_all"
+    extra_params:
+      approval_prompt: "force"
+
+  notion:
+    display_name: "Notion"
+    base_url: "https://api.notion.com/v1"
+    auth_url: "https://api.notion.com/v1/oauth/authorize"
+    token_url: "https://api.notion.com/v1/oauth/token"
+    client_id: "${NOTION_CLIENT_ID}"
+    client_secret: "${NOTION_CLIENT_SECRET}"
+    scopes:
+      - "read"
+    extra_params:
+      owner: "user"
+
+  spotify:
+    display_name: "Spotify"
+    base_url: "https://api.spotify.com/v1"
+    auth_url: "https://accounts.spotify.com/authorize"
+    token_url: "https://accounts.spotify.com/api/token"
+    client_id: "${SPOTIFY_CLIENT_ID}"
+    client_secret: "${SPOTIFY_CLIENT_SECRET}"
+    scopes:
+      - "user-read-private"
+      - "user-read-email"
+      - "user-library-read"
+      - "user-top-read"
