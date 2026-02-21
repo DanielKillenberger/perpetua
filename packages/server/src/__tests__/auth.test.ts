@@ -85,10 +85,21 @@ describe('Auth Routes', () => {
   });
 
   describe('POST /auth/:provider/start', () => {
+    test('should require API key for auth start', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/auth/oura/start',
+        payload: { account: 'daniel' },
+      });
+
+      expect(response.statusCode).toEqual(401);
+    });
+
     test('should return auth_url and state for valid provider', async () => {
       const response = await app.inject({
         method: 'POST',
         url: '/auth/oura/start',
+        headers: { authorization: 'Bearer test-key' },
         payload: { account: 'daniel' },
       });
 
@@ -111,6 +122,7 @@ describe('Auth Routes', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/auth/oura/start',
+        headers: { authorization: 'Bearer test-key' },
         payload: {},
       });
 
@@ -127,6 +139,7 @@ describe('Auth Routes', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/auth/gcal/start',
+        headers: { authorization: 'Bearer test-key' },
         payload: { account: 'daniel' },
       });
 
@@ -138,10 +151,22 @@ describe('Auth Routes', () => {
       expect(body.auth_url).toContain('prompt=consent');
     });
 
+    test('should reject invalid account value', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/auth/oura/start',
+        headers: { authorization: 'Bearer test-key' },
+        payload: { account: '' },
+      });
+
+      expect(response.statusCode).toEqual(400);
+    });
+
     test('should return 404 for unknown provider', async () => {
       const response = await app.inject({
         method: 'POST',
         url: '/auth/unknown-provider/start',
+        headers: { authorization: 'Bearer test-key' },
         payload: {},
       });
 
@@ -152,6 +177,17 @@ describe('Auth Routes', () => {
   });
 
   describe('GET /auth/:provider/callback', () => {
+    test('should escape OAuth error in callback HTML', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/auth/oura/callback?error=%3Cscript%3Ealert(1)%3C%2Fscript%3E',
+      });
+
+      expect(response.statusCode).toEqual(400);
+      expect(response.body).not.toContain('<script>alert(1)</script>');
+      expect(response.body).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    });
+
     test('should handle missing code', async () => {
       const response = await app.inject({
         method: 'GET',

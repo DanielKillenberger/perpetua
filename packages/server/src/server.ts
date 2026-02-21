@@ -126,11 +126,26 @@ async function main(): Promise<void> {
   });
 
   // ── Error handler ─────────────────────────────────────────────────────────────
-  app.setErrorHandler((error, _request, reply) => {
-    app.log.error(error);
-    reply.code(error.statusCode ?? 500).send({
-      error: error.name ?? 'InternalError',
-      message: error.message ?? 'An unexpected error occurred',
+  app.setErrorHandler((error, request, reply) => {
+    app.log.error({
+      route: request.routerPath,
+      method: request.method,
+      statusCode: error.statusCode,
+      err: error,
+    }, 'Unhandled route error');
+
+    const statusCode = error.statusCode ?? 500;
+    if (statusCode >= 500) {
+      reply.code(statusCode).send({
+        error: 'InternalError',
+        message: 'An unexpected error occurred',
+      });
+      return;
+    }
+
+    reply.code(statusCode).send({
+      error: error.name ?? 'RequestError',
+      message: error.message ?? 'Request failed',
     });
   });
 

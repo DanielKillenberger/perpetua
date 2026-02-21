@@ -9,6 +9,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { randomBytes } from 'crypto';
 import { getProvider } from './providers.js';
 import type { ITokenStore } from 'perpetua/store/types';
+import { requireApiKey } from './middleware.js';
 
 interface AuthParams {
   provider: string;
@@ -24,7 +25,19 @@ interface CallbackQuery {
   error?: string;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 function successHtml(provider: string, account: string): string {
+  const safeProvider = escapeHtml(provider);
+  const safeAccount = escapeHtml(account);
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -39,13 +52,15 @@ function successHtml(provider: string, account: string): string {
 </head>
 <body>
   <h1>✅ Connected!</h1>
-  <p>Provider <strong>${provider}</strong> (account: <code>${account}</code>) has been linked to Perpetua.</p>
+  <p>Provider <strong>${safeProvider}</strong> (account: <code>${safeAccount}</code>) has been linked to Perpetua.</p>
   <p>You can close this tab.</p>
 </body>
 </html>`;
 }
 
 function errorHtml(message: string): string {
+  const safeMessage = escapeHtml(message);
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -59,7 +74,7 @@ function errorHtml(message: string): string {
 </head>
 <body>
   <h1>❌ Authentication Failed</h1>
-  <p>${message}</p>
+  <p>${safeMessage}</p>
 </body>
 </html>`;
 }
@@ -72,6 +87,26 @@ export function registerAuthRoutes(app: FastifyInstance, store: ITokenStore): vo
    */
   app.post<{ Params: AuthParams; Body: StartBody }>(
     '/auth/:provider/start',
+    {
+      preHandler: requireApiKey,
+      schema: {
+        params: {
+          type: 'object',
+          required: ['provider'],
+          properties: {
+            provider: { type: 'string', minLength: 1, maxLength: 64, pattern: '^[a-zA-Z0-9_-]+$' },
+          },
+          additionalProperties: false,
+        },
+        body: {
+          type: 'object',
+          properties: {
+            account: { type: 'string', minLength: 1, maxLength: 128 },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
     async (request: FastifyRequest<{ Params: AuthParams; Body: StartBody }>, reply: FastifyReply) => {
       const { provider } = request.params;
       const account = (request.body as StartBody)?.account ?? 'default';
@@ -120,6 +155,27 @@ export function registerAuthRoutes(app: FastifyInstance, store: ITokenStore): vo
    */
   app.get<{ Params: AuthParams; Querystring: CallbackQuery }>(
     '/auth/:provider/callback',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['provider'],
+          properties: {
+            provider: { type: 'string', minLength: 1, maxLength: 64, pattern: '^[a-zA-Z0-9_-]+$' },
+          },
+          additionalProperties: false,
+        },
+        querystring: {
+          type: 'object',
+          properties: {
+            code: { type: 'string', minLength: 1, maxLength: 2048 },
+            state: { type: 'string', minLength: 1, maxLength: 256 },
+            error: { type: 'string', minLength: 1, maxLength: 256 },
+          },
+          additionalProperties: true,
+        },
+      },
+    },
     async (request: FastifyRequest<{ Params: AuthParams; Querystring: CallbackQuery }>, reply: FastifyReply) => {
       const { provider } = request.params;
       const { code, state, error } = request.query;
@@ -184,8 +240,7 @@ export function registerAuthRoutes(app: FastifyInstance, store: ITokenStore): vo
         });
 
         if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`Token exchange failed (${res.status}): ${text}`);
+          throw new Error(`Token exchange failed with status ${res.status}`);
         }
 
         tokenData = (await res.json()) as typeof tokenData;

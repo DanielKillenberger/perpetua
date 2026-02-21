@@ -46,8 +46,7 @@ async function refreshAccessToken(
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Token refresh failed (${res.status}): ${text}`);
+    throw new Error(`Token refresh failed with status ${res.status}`);
   }
 
   const data = (await res.json()) as {
@@ -101,7 +100,27 @@ export function registerProxyRoutes(app: FastifyInstance, store: ITokenStore): v
   // Match ALL methods and ALL paths under /proxy/:provider/
   app.all<{ Params: ProxyParams; Querystring: ProxyQuery }>(
     '/proxy/:provider/*',
-    { preHandler: requireApiKey },
+    {
+      preHandler: requireApiKey,
+      schema: {
+        params: {
+          type: 'object',
+          required: ['provider', '*'],
+          properties: {
+            provider: { type: 'string', minLength: 1, maxLength: 64, pattern: '^[a-zA-Z0-9_-]+$' },
+            '*': { type: 'string', minLength: 1, maxLength: 4096 },
+          },
+          additionalProperties: false,
+        },
+        querystring: {
+          type: 'object',
+          properties: {
+            account: { type: 'string', minLength: 1, maxLength: 128 },
+          },
+          additionalProperties: true,
+        },
+      },
+    },
     async (request: FastifyRequest<{ Params: ProxyParams; Querystring: ProxyQuery }>, reply: FastifyReply) => {
       const { provider, '*': wildcardPath } = request.params;
       const accountParam = request.query.account as string | undefined;
@@ -201,7 +220,7 @@ export function registerProxyRoutes(app: FastifyInstance, store: ITokenStore): v
           redirect: 'follow',
         });
       } catch (err) {
-        app.log.error({ provider, upstreamUrl, err }, 'Upstream request failed');
+        app.log.error({ provider, err }, 'Upstream request failed');
         return reply.code(502).send({
           error: 'UpstreamError',
           message: `Failed to reach upstream for provider "${provider}".`,
