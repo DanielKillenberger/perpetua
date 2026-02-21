@@ -4,8 +4,11 @@
  */
 
 import 'dotenv/config';
-import Fastify from 'fastify';
+import Fastify, { type FastifyError } from 'fastify';
 import formbody from '@fastify/formbody';
+import helmet from '@fastify/helmet';
+import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
 
 import { registerAuthRoutes } from './auth.js';
 import { registerProxyRoutes } from './proxy.js';
@@ -31,6 +34,29 @@ async function main(): Promise<void> {
 
   // Parse form bodies (needed for OAuth token exchange)
   await app.register(formbody);
+
+  // Security headers (X-Frame-Options, X-Content-Type-Options, CSP, etc.)
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+      },
+    },
+  });
+
+  // CORS — API-only server; restrict origins unless explicitly configured
+  await app.register(cors, {
+    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : false,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  });
+
+  // Global rate limiting: 100 req/min per IP
+  await app.register(rateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+  });
 
   // Store app-wide decoration for dependency injection
   app.decorate('store', store);
@@ -99,7 +125,20 @@ async function main(): Promise<void> {
    */
   app.delete<{ Params: { provider: string; account: string } }>(
     '/connections/:provider/:account',
-    { preHandler: requireApiKey },
+    {
+      preHandler: requireApiKey,
+      schema: {
+        params: {
+          type: 'object',
+          required: ['provider', 'account'],
+          properties: {
+            provider: { type: 'string', minLength: 1, maxLength: 64, pattern: '^[a-zA-Z0-9_-]+$' },
+            account: { type: 'string', minLength: 1, maxLength: 128, pattern: '^[a-zA-Z0-9_-]+$' },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
     async (request, reply) => {
       const { provider, account } = request.params;
 
@@ -126,9 +165,9 @@ async function main(): Promise<void> {
   });
 
   // ── Error handler ─────────────────────────────────────────────────────────────
-  app.setErrorHandler((error, request, reply) => {
+  app.setErrorHandler((error: FastifyError, request, reply) => {
     app.log.error({
-      route: request.routerPath,
+      route: request.routeOptions?.url,
       method: request.method,
       statusCode: error.statusCode,
       err: error,

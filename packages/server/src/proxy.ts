@@ -102,6 +102,9 @@ export function registerProxyRoutes(app: FastifyInstance, store: ITokenStore): v
     '/proxy/:provider/*',
     {
       preHandler: requireApiKey,
+      config: {
+        rateLimit: { max: 60, timeWindow: '1 minute' },
+      },
       schema: {
         params: {
           type: 'object',
