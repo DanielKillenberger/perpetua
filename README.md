@@ -131,7 +131,7 @@ Don't want to self-host? [perpetua.sh](https://perpetua.sh) is the managed versi
 
 | Endpoint | Auth | Description |
 |----------|------|-------------|
-| `POST /auth/:provider/start` | No | Initiate OAuth flow (returns auth_url) |
+| `POST /auth/:provider/start` | **Yes** | Initiate OAuth flow (returns auth_url) |
 | `GET /auth/:provider/callback` | No | OAuth redirect target (automatic) |
 | `DELETE /connections/:provider/:account` | **Yes** | Revoke and delete a connection |
 
@@ -193,8 +193,11 @@ curl -X DELETE "http://localhost:3001/connections/oura/daniel" \
 ## Security
 
 - **Encryption:** Refresh tokens are encrypted at rest using AES-256-GCM
-- **API Key Authentication:** All endpoints (except `/health` and OAuth callbacks) require a valid API key in the `Authorization: Bearer <key>` header
-- **No Secrets in Logs:** API keys and tokens are never logged
+- **API Key Authentication:** All sensitive endpoints (including `POST /auth/:provider/start`) require `Authorization: Bearer <key>`
+- **Rate Limiting:** Global and route-level limits are enabled to reduce abuse/bruteforce risk
+- **Security Headers:** Helmet-based baseline headers are enabled (including CSP and X-Frame/X-Content-Type protections)
+- **Restrictive CORS by default:** No cross-origin access unless `CORS_ORIGIN` is explicitly configured
+- **No Secrets in Logs:** API keys and tokens are not logged; upstream error details are redacted
 - **Timing-Safe Comparison:** API key validation uses constant-time comparison to prevent timing attacks
 - **HTTPS Recommended:** For production, run behind HTTPS (Perpetua doesn't handle TLS itself)
 
