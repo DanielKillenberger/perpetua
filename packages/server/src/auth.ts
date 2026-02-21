@@ -89,6 +89,9 @@ export function registerAuthRoutes(app: FastifyInstance, store: ITokenStore): vo
     '/auth/:provider/start',
     {
       preHandler: requireApiKey,
+      config: {
+        rateLimit: { max: 10, timeWindow: '1 minute' },
+      },
       schema: {
         params: {
           type: 'object',
@@ -156,6 +159,9 @@ export function registerAuthRoutes(app: FastifyInstance, store: ITokenStore): vo
   app.get<{ Params: AuthParams; Querystring: CallbackQuery }>(
     '/auth/:provider/callback',
     {
+      config: {
+        rateLimit: { max: 20, timeWindow: '1 minute' },
+      },
       schema: {
         params: {
           type: 'object',

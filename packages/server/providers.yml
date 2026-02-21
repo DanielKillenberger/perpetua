@@ -1,3 +1,9 @@
+# Perpetua OAuth Provider Configuration
+#
+# Scope policy: follow least-privilege. Only request scopes that Perpetua
+# actively needs to proxy. Remove or comment out any scope you don't use.
+# Users can always override scopes per-connection if the provider supports it.
+
 providers:
   gcal:
     display_name: "Google Calendar"
@@ -7,7 +13,7 @@ providers:
     client_id: "${GOOGLE_CLIENT_ID}"
     client_secret: "${GOOGLE_CLIENT_SECRET}"
     scopes:
-      - "https://www.googleapis.com/auth/calendar.readonly"
+      - "https://www.googleapis.com/auth/calendar.readonly"  # read-only calendar access
     extra_params:
       access_type: "offline"
       prompt: "consent"
@@ -21,12 +27,14 @@ providers:
     client_id: "${OURA_CLIENT_ID}"
     client_secret: "${OURA_CLIENT_SECRET}"
     scopes:
-      - "personal"
-      - "daily"
-      - "heartrate"
-      - "workout"
-      - "tag"
-      - "session"
+      # Each scope grants read access to a specific Oura data category.
+      # Remove any you don't need to reduce the access surface.
+      - "personal"   # required: profile info for account identification
+      - "daily"      # daily activity/readiness/sleep summaries
+      - "heartrate"  # continuous heart rate data
+      - "workout"    # workout sessions
+      - "tag"        # user-created tags
+      - "session"    # guided/unguided sessions (breathing, meditation)
 
   strava:
     display_name: "Strava"
@@ -36,8 +44,8 @@ providers:
     client_id: "${STRAVA_CLIENT_ID}"
     client_secret: "${STRAVA_CLIENT_SECRET}"
     scopes:
-      - "read"
-      - "activity:read_all"
+      - "read"              # required: public profile and activity summaries
+      - "activity:read_all" # private activities (remove if only public data needed)
     extra_params:
       approval_prompt: "force"
 
@@ -49,7 +57,7 @@ providers:
     client_id: "${NOTION_CLIENT_ID}"
     client_secret: "${NOTION_CLIENT_SECRET}"
     scopes:
-      - "read"
+      - "read"  # read-only access to pages/databases the user has shared
     extra_params:
       owner: "user"
 
@@ -61,7 +69,7 @@ providers:
     client_id: "${SPOTIFY_CLIENT_ID}"
     client_secret: "${SPOTIFY_CLIENT_SECRET}"
     scopes:
-      - "user-read-private"
-      - "user-read-email"
-      - "user-library-read"
-      - "user-top-read"
+      - "user-read-private"  # required: account info for identification
+      - "user-read-email"    # optional: email for account matching
+      - "user-library-read"  # saved tracks/albums/shows
+      - "user-top-read"      # top artists and tracks

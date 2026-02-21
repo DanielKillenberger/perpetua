@@ -29,8 +29,7 @@ async function refreshToken(
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`HTTP ${res.status}: ${text}`);
+    throw new Error(`Token refresh failed with status ${res.status}`);
   }
 
   const data = (await res.json()) as { access_token: string; expires_in?: number };
@@ -65,7 +64,8 @@ async function runRefreshCycle(store: ITokenStore): Promise<void> {
         `[refresh] Refreshed ${token.provider}/${token.account} — expires at ${new Date(expiresAt * 1000).toISOString()}`,
       );
     } catch (err) {
-      console.error(`[refresh] Failed to refresh ${token.provider}/${token.account}:`, err);
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      console.error(`[refresh] Failed to refresh ${token.provider}/${token.account}: ${message}`);
     }
   }
 }
