@@ -1,38 +1,9 @@
 ---
 name: perpetua
-description: "Transparent OAuth proxy — use a single API key to call any OAuth-protected API. Use when setting up Perpetua (self-hosted or hosted), connecting OAuth providers, proxying API requests, or troubleshooting token issues."
+description: "Transparent OAuth proxy — use a single API key to call any OAuth-protected API. Use when setting up Perpetua (self-hosted or hosted), connecting OAuth providers (Oura, Google Calendar, Strava, Notion, Spotify), proxying API requests, or troubleshooting token issues."
 version: 1.0.0
-read_when:
-  - User wants to set up an OAuth proxy
-  - User wants to call an OAuth API without managing tokens
-  - User asks about connecting Oura, Google Calendar, Strava, Notion, or Spotify
-  - User asks how to self-host Perpetua
-  - User asks about perpetua.sh hosted service
-triggers:
-  - perpetua
-  - oauth proxy
-  - token refresh
-  - oauth setup
-  - perpetua.sh
-metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "🔑",
-        "kind": "service",
-        "requires": { "bins": ["docker"] },
-        "install":
-          [
-            {
-              "id": "docker",
-              "kind": "brew",
-              "formula": "docker",
-              "bins": ["docker"],
-              "label": "Install Docker (brew)"
-            }
-          ]
-      }
-  }
+homepage: https://perpetua.sh
+metadata: {"openclaw":{"emoji":"🔑","kind":"service","primaryEnv":"PERPETUA_KEY","requires":{"anyBins":["docker","node"]},"install":[{"id":"docker","kind":"brew","formula":"docker","bins":["docker"],"label":"Install Docker (brew)"},{"id":"node","kind":"brew","formula":"node","bins":["node"],"label":"Install Node.js (brew)"}]}}
 ---
 
 # Perpetua — Never Fix OAuth Tokens Again
